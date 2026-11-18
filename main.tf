@@ -11,6 +11,7 @@
 # on choosing that signal, because the obvious choice is usually wrong.
 
 data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
 
 locals {
   # The GPU variant of the AMI carries the NVIDIA driver and the container runtime
@@ -187,6 +188,34 @@ resource "aws_autoscaling_group" "this" {
     create_before_destroy = true
     ignore_changes        = [desired_capacity]
   }
+}
+
+# --- Root volume key --------------------------------------------------------
+
+# Auto Scaling launches the instance as its service-linked role, and EBS asks KMS for a
+# grant on that role's behalf. The role has no IAM policy for a customer-managed key, so
+# with a default key policy (account root only) the grant fails and the instance is
+# terminated before InService with Client.InvalidKMSKey.InvalidState, although the key
+# is enabled. The grant waits for the group, because creating the first group in an
+# account is what creates the role, and the group starts at 0 so nothing launches first.
+resource "aws_kms_grant" "autoscaling" {
+  count = var.kms_key_arn != null && var.grant_autoscaling_kms_access ? 1 : 0
+
+  name              = "${var.name}-autoscaling"
+  key_id            = var.kms_key_arn
+  grantee_principal = "arn:${local.partition}:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"
+  operations = [
+    "Encrypt",
+    "Decrypt",
+    "ReEncryptFrom",
+    "ReEncryptTo",
+    "GenerateDataKey",
+    "GenerateDataKeyWithoutPlaintext",
+    "DescribeKey",
+    "CreateGrant",
+  ]
+
+  depends_on = [aws_autoscaling_group.this]
 }
 
 # --- Capacity provider ------------------------------------------------------
