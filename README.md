@@ -62,6 +62,14 @@ The alternative is task scale-in protection: let the task protect itself while i
 | **A customer-managed key on the root volume** | Auto Scaling launches the instance as its service-linked role, which has no IAM policy for your key. With a default key policy EBS cannot get its grant, and every instance is terminated before InService with `Client.InvalidKMSKey.InvalidState`, although the key is enabled. When `kms_key_arn` is set, the module grants that role the key operations EBS needs. Set `grant_autoscaling_kms_access = false` if your key policy already names the role. |
 | **`instance_warmup_period`** | Too short and ECS asks for a second instance while the first is still pulling its image. Set it to the time you measure, not a guess. |
 
+## The 15 minutes after the last task
+
+ECS managed scaling scales in through a target-tracking alarm that needs 15 one-minute datapoints below target. AWS owns that alarm, and the policy rewrites any edit to it. So when the last task stops, the empty instance keeps running, and billing, for about 15 minutes. On a g4dn.xlarge at $0.526 an hour that is about $0.13 every time the service goes idle, which for a service that wakes several times a day is more than the time it spends working.
+
+Set `fast_scale_in = true` to remove the instance when its last task stops. An EventBridge rule starts an SSM Automation runbook on each task stop for this capacity provider, and its `aws:executeScript` step does the work. No Lambda function, no package to build. Each run leaves an Automation execution record with what it removed and why. The runbook leaves the group alone while any task for the provider waits to start. Otherwise it drains each empty instance, checks again that the instance is still empty, lifts its scale-in protection, and terminates it. The drain comes before the second check so that ECS cannot place a task on the instance between the check and the termination.
+
+Managed scaling still owns scale-out, and its own scale-in stays as the fallback if the runbook fails. With nothing reserved, managed scaling also wants zero, so the two never disagree.
+
 ## Measuring the first start
 
 The first task after an idle period waits for an instance to boot and pull the image. Measure it on a non-production environment before relying on it, because every timeout downstream is derived from that number: the client's retry budget, `instance_warmup_seconds`, and any health-check grace period.
