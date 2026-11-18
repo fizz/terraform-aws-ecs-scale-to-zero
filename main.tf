@@ -162,9 +162,12 @@ resource "aws_autoscaling_group" "this" {
     version = "$Latest"
   }
 
-  # Managed termination protection is set through this tag. Without it the capacity
-  # provider is created but refuses to protect anything, and a scale-in can stop an
-  # instance while its task is still working. This is the trap in the whole design.
+  # Managed termination protection needs two things on the group: new instances
+  # protected from scale-in, and the AmazonECSManaged tag. Without the protection
+  # AWS rejects the capacity provider at create time. ECS lifts the protection from
+  # an instance once it runs no tasks, so the group can still scale in to zero.
+  protect_from_scale_in = var.managed_termination_protection
+
   tag {
     key                 = "AmazonECSManaged"
     value               = "true"

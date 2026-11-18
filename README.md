@@ -54,7 +54,7 @@ The alternative is task scale-in protection: let the task protect itself while i
 
 | Trap | What happens without it |
 |---|---|
-| **The `AmazonECSManaged` tag** | Managed termination protection is set through this tag on the group. Without the tag the capacity provider is created and silently protects nothing, so a scale-in can stop an instance while its task is working. |
+| **Scale-in protection and the `AmazonECSManaged` tag** | Managed termination protection needs both on the group. Without scale-in protection AWS rejects the capacity provider when it is created. Without the tag the capacity provider protects nothing, so a scale-in can stop an instance while its task is working. |
 | **The GPU AMI variant** | A standard ECS-optimized image boots fine on a GPU instance and never exposes the GPU to a task. The GPU variant carries the driver and the container runtime hook, and `ECS_ENABLE_GPU_SUPPORT` has to be in `ecs.config`. |
 | **`ECS_CLUSTER` in user data** | Without it the instance boots, never joins the cluster, and ECS keeps asking for capacity that is already running and idle. |
 | **Root volume size** | The default root volume does not fit a large image with room to unpack it. A CUDA image is several gigabytes. |

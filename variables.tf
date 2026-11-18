@@ -102,7 +102,7 @@ variable "instance_warmup_seconds" {
 }
 
 variable "managed_termination_protection" {
-  description = "Let ECS protect an instance while a task runs on it, so a scale-in cannot stop work in progress. Needs the AmazonECSManaged tag, which this module sets."
+  description = "Let ECS protect an instance while a task runs on it, so a scale-in cannot stop work in progress. Needs scale-in protection on the group and the AmazonECSManaged tag, both of which this module sets."
   type        = bool
   default     = true
 }
