@@ -59,6 +59,7 @@ The alternative is task scale-in protection: let the task protect itself while i
 | **`ECS_CLUSTER` in user data** | Without it the instance boots, never joins the cluster, and ECS keeps asking for capacity that is already running and idle. |
 | **Root volume size** | The default root volume does not fit a large image with room to unpack it. A CUDA image is several gigabytes. |
 | **`desired_capacity` drift** | ECS owns the desired count once managed scaling is on. The group ignores changes to it rather than fighting ECS on every apply. |
+| **A customer-managed key on the root volume** | Auto Scaling launches the instance as its service-linked role, which has no IAM policy for your key. With a default key policy EBS cannot get its grant, and every instance is terminated before InService with `Client.InvalidKMSKey.InvalidState`, although the key is enabled. When `kms_key_arn` is set, the module grants that role the key operations EBS needs. Set `grant_autoscaling_kms_access = false` if your key policy already names the role. |
 | **`instance_warmup_period`** | Too short and ECS asks for a second instance while the first is still pulling its image. Set it to the time you measure, not a guess. |
 
 ## Measuring the first start

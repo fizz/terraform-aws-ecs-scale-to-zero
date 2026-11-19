@@ -66,6 +66,12 @@ variable "kms_key_arn" {
   default     = null
 }
 
+variable "grant_autoscaling_kms_access" {
+  description = "With kms_key_arn set, grant Auto Scaling's service-linked role the key operations EBS needs to encrypt the root volume. Without the grant, or a key policy statement that does the same, every launch fails with Client.InvalidKMSKey.InvalidState. Ignored when kms_key_arn is null."
+  type        = bool
+  default     = true
+}
+
 variable "security_group_ids" {
   description = "Security groups for the instances. Null creates one with egress only and no ingress, which is what an awsvpc task needs."
   type        = list(string)
