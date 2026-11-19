@@ -119,6 +119,18 @@ variable "managed_draining" {
   default     = true
 }
 
+variable "fast_scale_in" {
+  description = "Remove an empty instance as soon as its last task stops, instead of after the 15 minutes ECS managed scaling waits. Adds an EventBridge rule and an SSM Automation runbook. Managed scaling still owns scale-out."
+  type        = bool
+  default     = false
+}
+
+variable "fast_scale_in_dry_run" {
+  description = "With fast_scale_in on, the runbook reports which instances it would remove and removes none. For a first run against a live group."
+  type        = bool
+  default     = false
+}
+
 variable "enable_session_manager" {
   description = "Attach AmazonSSMManagedInstanceCore. The group has no key pair and the security group no ingress, so this is the only way onto an instance."
   type        = bool
